@@ -3,12 +3,14 @@
 
     <!-- 查询表单 -->
     <el-form :inline="true">
+
       <el-form-item>
         <el-input v-model="searchObj.name" placeholder="讲师名"/>
       </el-form-item>
 
       <el-form-item>
-        <el-select v-model="searchObj.name" clearable placeholder="讲师头衔">
+        <!-- el-select: 下拉菜单 -->
+        <el-select v-model="searchObj.level" clearable placeholder="讲师头衔">
           <el-option value="1" label="高级讲师"/>
           <el-option value="2" label="首席讲师"/>
         </el-select>
@@ -16,30 +18,33 @@
 
       <el-form-item label="入驻时间">
         <el-date-picker
-          v-model="value1"
+          v-model="searchObj.joinDateBegin"
           type="date"
           placeholder="开始时间"
-          value-format="yyy-MM-dd"/>
+          value-format="yyyy-MM-dd"/>
       </el-form-item>
+
       <el-form-item label="-">
         <el-date-picker
-          v-model="value1"
+          v-model="searchObj.joinDateEnd"
           type="date"
           placeholder="结束时间"
-          value-format="yyy-MM-dd"/>
+          value-format="yyyy-MM-dd"/>
       </el-form-item>
+
       <el-form-item>
         <el-button type="primary" icon="el-icon-search" @click="fetchData()">查询</el-button>
         <el-button type="default" @click="resetData()">清空</el-button>
       </el-form-item>
+
     </el-form>
 
     <!-- 表格 -->
     <el-table :data="list" border stripe>
 
       <el-table-column type="index" width="50">
-        <!-- scope:获取当前行的所有的数据 -->
-        <!-- $index访问当前行的索引 -->
+        <!-- scope: 获取当前行的所有的数据 -->
+        <!-- $index 访问当前行的索引 -->
         <template slot-scope="scope">
           {{ ( page - 1 ) * limit + scope.$index + 1 }}
         </template>
@@ -60,16 +65,16 @@
 
       <el-table-column prop="" label="操作" width="200" align="center">
         <!-- 自定义列的内容 -->
-        <!-- el-tag 标签组件 -->
-        <!-- 在table组件中添加删除列 -->
         <template slot-scope="scope">
-          <el-button
-            size="mini"
-            @click="handleEdit(scope.$index, scope.row)">编辑</el-button>
+          <router-link :to="'/teacher/edit/' + scope.row.id">
+            <el-button
+              size="mini">编辑</el-button>
+          </router-link>
+
           <el-button
             size="mini"
             type="danger"
-            @click="removeById(scope.$index, scope.row)">删除</el-button>
+            @click="removeById(scope.row.id)">删除</el-button>
         </template>
       </el-table-column>
 
@@ -77,6 +82,8 @@
 
     <!-- 分页组件 -->
     <!-- total：总记录数  layout：布局 -->
+    <!-- "prev, pager, next, sizes, jumper, ->, total" 是字符串 -->
+    <!-- @size-change 为组件注册事件，注意使用函数的引用 -->
     <el-pagination
       :current-page="page"
       :total="total"
@@ -105,6 +112,7 @@ export default {
     }
   },
 
+  // 生命周期函数
   created() {
     // 获取讲师列表
     this.fetchData()
@@ -113,20 +121,43 @@ export default {
   methods: {
 
     // 清空查询表单
+    resetData() {
+      // 清空查询表单
+      this.searchObj = {}
+      // 重新查询
+      this.fetchData()
+    },
 
-    //
+    // 根据id删除记录
+    // removeById1(id) {
+    //   this.$confirm('此操作将永久删除该文件, 是否继续?', '提示', {
+    //     confirmButtonText: '确定',
+    //     cancelButtonText: '取消',
+    //     type: 'warning'
+    //   }).then(response => {
+    //     teacherApi.removeById(id).then(response => {
+    //       this.fetchData()
+    //       this.$message.success(response.message)
+    //     })
+    //   }).catch(result => {
+    //     this.$message.success('取消删除')
+    //   })
+    // },
+
     removeById(id) {
-      this.$confirm('此操作将永久删除该文件，是否继续？', '提示', {
-        confirmButtonText: '确认',
+      this.$confirm('此操作将永久删除该文件, 是否继续?', '提示', {
+        confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
       }).then(response => {
-        teacherApi.removeById(id).then(response => {
-          this.fetchData()
-          this.$message.success(response.$message)
-        })
+        return teacherApi.removeById(id)
+      }).then(response => {
+        this.fetchData()
+        this.$message.success(response.message)
       }).catch(result => {
-        this.$message.info('取消删除')
+        if (result === 'cancel') {
+          this.$message.success('取消删除')
+        }
       })
     },
 
@@ -150,6 +181,8 @@ export default {
     //     console.log(this.list)
     //   })
     // }
+
+    // fetchData()方法由生命周期函数调用
     fetchData() {
       teacherApi.pageList(this.page, this.limit, this.searchObj).then(response => {
         this.list = response.data.pageModel.records

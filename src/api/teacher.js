@@ -28,7 +28,7 @@ export default{
     return request({
       url: '/admin/edu/teacher/save',
       method: 'post',
-      data: teacher // 在请求体中用json字符串传参
+      data: teacher // 在请求体中用json字符串的形式传参
     })
   },
 
